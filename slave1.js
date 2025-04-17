@@ -3,12 +3,11 @@ const TOKEN='7898378784:AAH7RAql823WY3nE25ph28kyO2N20Rhqbts',ID_NHOM='7371969470
 const app=express();app.use(express.json());const bot=new TelegramBot(TOKEN,{polling:false});
 let danhSachSlave=[],thoiDiemBatDau=Math.floor(Date.now()/1000);
 
-const chayLenh=(lenh,callback)=>{exec(lenh,(loi,ketQua,loiChu)=>callback(loi?`Lỗi: ${loi.message}\n${loiChu||''}`.trim():(ketQua||'').trim()));};
+const chayLenh=(lenh,callback)=>{exec(lenh,(_,ketQua)=>callback((ketQua||'').trim()));};
 const thongBaoMatKetNoi=(url)=>{const slave=danhSachSlave.find(s=>s.url===url);if(slave)bot.sendMessage(ID_NHOM,`⚠️ Slave ${slave.stt} ${slave.tenMay} mất kết nối!`);danhSachSlave=danhSachSlave.filter(s=>s.url!==url);};
-const guiRequest=(options,duLieu,callback)=>{const req=https.request(options,phanHoi=>{let duLieu='';phanHoi.on('data',chunk=>duLieu+=chunk);phanHoi.on('end',()=>callback(duLieu.includes('<html>')?`Lỗi kết nối: ${duLieu.match(/<h1>(.*?)<\/h1>/)?.[1]||'Lỗi không xác định'}`:duLieu));});req.on('error',loi=>callback(`Lỗi kết nối: ${loi.message}`));if(duLieu)req.write(duLieu);req.end();};
+const guiRequest=(options,duLieu,callback)=>{const req=https.request(options,phanHoi=>{let duLieu='';phanHoi.on('data',chunk=>duLieu+=chunk);phanHoi.on('end',()=>callback(duLieu));});req.on('error',()=>callback(''));if(duLieu)req.write(duLieu);req.end();};
 const guiTin=(id,text)=>{bot.sendMessage(id,text,{parse_mode:'Markdown'});};
 const formatStatus=(b)=>`${b.loai==='master'?'👑 *Master*':'🤖 *Slave*'}: ${b.ten}\n*Port:* ${b.port}\n*Uptime:* \`${b.uptime}\``;
-const taoSTT=()=>{const sttDaDung=danhSachSlave.map(s=>s.stt);for(let i=1;i<=danhSachSlave.length+1;i++)if(!sttDaDung.includes(i))return i;return danhSachSlave.length+1;};
 setInterval(()=>{const bayGio=Date.now();danhSachSlave.forEach(s=>{if(bayGio-s.lanCuoiPing>10000)thongBaoMatKetNoi(s.url);});},2000);
 
 app.post(`/bot${TOKEN}`,(req,res)=>{
@@ -18,19 +17,19 @@ app.post(`/bot${TOKEN}`,(req,res)=>{
   if(noiDung==='/status'){
     Promise.all([
       new Promise(resolve=>chayLenh('uptime',ketQua=>resolve({loai:'master',ten:TEN_MAY,uptime:ketQua,port:CONG}))),
-      ...danhSachSlave.map(s=>new Promise(resolve=>guiRequest({hostname:new URL(s.url).hostname,path:'/uptime',method:'GET',timeout:5000},null,duLieu=>resolve({loai:'slave',ten:`${s.tenMay} (${s.stt})`,uptime:duLieu.trim(),port:s.port}))))
+      ...danhSachSlave.map(s=>new Promise(resolve=>guiRequest({hostname:new URL(s.url).hostname,path:'/uptime',method:'GET'},null,duLieu=>resolve({loai:'slave',ten:`${s.tenMay} (${s.stt})`,uptime:duLieu.trim(),port:s.port}))))
     ]).then(tatCa=>guiTin(id,`🟢 *Bots online (${tatCa.length}):*\n\n${tatCa.map(formatStatus).join('\n\n')}`));return res.sendStatus(200);
   }
   if(noiDung.startsWith('/slave')){
     const lenh=noiDung.slice(6).trim();if(!lenh){guiTin(id,'⚠️ Nhập lệnh sau /slave');return res.sendStatus(200);}
     if(!danhSachSlave.length){guiTin(id,'⚠️ Không có slave nào online');return res.sendStatus(200);}
     guiTin(id,`🔄 Đang thực hiện \`${lenh}\` trên ${danhSachSlave.length} Slave...`);
-    Promise.all(danhSachSlave.map(({url,tenMay,stt,port})=>new Promise(resolve=>guiRequest({hostname:new URL(url).hostname,path:'/exec',method:'POST',timeout:0,headers:{'Content-Type':'application/json'}},JSON.stringify({cmd:lenh}),duLieu=>resolve({stt,tenMay,port,ketQua:duLieu.trim()}))))).then(ketQuas=>ketQuas.forEach(({stt,tenMay,port,ketQua})=>guiTin(id,`💻 *Slave ${stt} ${tenMay} (Port:${port}):*\n\`\`\`\n${ketQua}\n\`\`\``)));return res.sendStatus(200);
+    danhSachSlave.forEach(({url,tenMay,stt,port})=>guiRequest({hostname:new URL(url).hostname,path:'/exec',method:'POST',headers:{'Content-Type':'application/json'}},JSON.stringify({cmd:lenh}),duLieu=>guiTin(id,`💻 *Slave ${stt} ${tenMay} (Port:${port}):*\n\`\`\`\n${duLieu.trim()}\n\`\`\``)));return res.sendStatus(200);
   }
   if(noiDung.startsWith('/master')){
     const lenh=noiDung.slice(7).trim();if(!lenh){guiTin(id,'⚠️ Nhập lệnh sau /master');return res.sendStatus(200);}
     guiTin(id,`🔄 Đang thực hiện \`${lenh}\` trên Master...`);
-    chayLenh(lenh,ketQua=>guiTin(id,`💻 *Master ${TEN_MAY} (Port:${CONG}):*\n\`\`\`\n${ketQua}\n\`\`\``));return res.sendStatus(200);
+    exec(lenh,(loi,ketQua,loiChu)=>guiTin(id,`💻 *Master ${TEN_MAY} (Port:${CONG}):*\n\`\`\`\n${(ketQua||loiChu||loi?.message||'Không có output').trim()}\n\`\`\``));return res.sendStatus(200);
   }
   res.sendStatus(200);
 });
@@ -38,7 +37,7 @@ app.post(`/bot${TOKEN}`,(req,res)=>{
 app.post('/exec',(req,res)=>{chayLenh(req.body?.cmd||'',ketQua=>res.send(ketQua));});
 app.get('/uptime',(req,res)=>{chayLenh('uptime',ketQua=>res.send(ketQua));});
 app.post('/register',(req,res)=>{const{port,url,hostname,report}=req.body||{};if(!port||!url||!hostname)return res.sendStatus(400);
-  const stt=taoSTT();danhSachSlave=danhSachSlave.filter(s=>s.url!==url).concat({port,url,tenMay:hostname,lanCuoiPing:Date.now(),stt});
+  const stt=danhSachSlave.length+1;danhSachSlave.push({port,url,tenMay:hostname,lanCuoiPing:Date.now(),stt});
   chayLenh('[ -f neofetch/neofetch ] && ./neofetch/neofetch --stdout || (git clone https://github.com/dylanaraps/neofetch && ./neofetch/neofetch --stdout)',ketQua=>guiTin(ID_NHOM,`📩 *Slave ${stt} đăng ký:*\n*Tên máy:* ${hostname}\n*Port:* ${port}\n*URL:* ${url}\n\n\`\`\`\n${ketQua||report||''}\n\`\`\``));res.sendStatus(200);
 });
 app.post('/ping',(req,res)=>{const slave=danhSachSlave.find(s=>s.url===req.body?.url);if(slave)slave.lanCuoiPing=Date.now();res.sendStatus(200);});
@@ -51,7 +50,7 @@ app.listen(CONG,async()=>{
       if(LA_MASTER){
         bot.setWebHook(`${urlTunnel}/bot${TOKEN}`);
         guiTin(ID_NHOM,`👑 *Master khởi động*\n*Máy chủ:* ${TEN_MAY}\n*Port:* ${CONG}\n*URL:* ${urlTunnel}\n\n\`\`\`\n${ketQua}\n\`\`\``);
-        guiTin(ID_NHOM,`💡 *Chạy slave:*\n\`\`\`\nMASTER_URL=${urlTunnel} node bot.js\n\`\`\``);
+        guiTin(ID_NHOM,`💡 *Chạy slave:*\n\`\`\`\nMASTER_URL=${urlTunnel} node slave.js\n\`\`\``);
       }else if(URL_MASTER){
         guiRequest({hostname:new URL(URL_MASTER).hostname,path:'/register',method:'POST',headers:{'Content-Type':'application/json'}},JSON.stringify({port:CONG,url:urlTunnel,hostname:TEN_MAY,report:ketQua}),()=>{});
         setInterval(()=>guiRequest({hostname:new URL(URL_MASTER).hostname,path:'/ping',method:'POST',headers:{'Content-Type':'application/json'}},JSON.stringify({url:urlTunnel}),()=>{}),3000);
