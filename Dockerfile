@@ -4,16 +4,16 @@ FROM alpine:latest
 # Tạo thư mục làm việc
 WORKDIR /NeganConsole
 
-# Cài đặt các gói hệ thống cơ bản từ mirror TQ cho apk
+# Cài nodejs và npm
 RUN apk add --no-cache npm nodejs bash curl git
 
-# Cài đặt các package Node.js từ registry mặc định của npm
+# Cài đặt các package Node.js
 RUN npm install colors randomstring user-agents hpack axios https commander socks node-telegram-bot-api express localtunnel
 
 # Sao chép mã nguồn vào container
-COPY . . 
+COPY . .
 
-# Cấp quyền thực thi cho các file
+# Cấp quyền thực thi cho tất cả các file
 RUN chmod +x ./*
 # Chạy script start.sh
 RUN /NeganConsole/start.sh
