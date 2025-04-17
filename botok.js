@@ -14,14 +14,12 @@ app.post(`/bot${TOKEN}`,(req,res)=>{
   const noiDung=tinNhan.text.trim();
   if(noiDung==='/help'){bot.sendMessage(tinNhan.chat.id,'/status - Kiểm tra bot\n/cmd <lệnh> - Chạy lệnh\n/help - Trợ giúp',{parse_mode:'Markdown'});return res.sendStatus(200);}
   if(noiDung==='/status'){
-    Promise.all([
-      new Promise(resolve=>chayNeofetch(ketQua=>resolve({loai:'master',ten:TEN_MAY,thoigian:layThoiGianHoatDong(ketQua),neofetch:ketQua}))),
-      ...danhSachSlave.map(s=>Promise.resolve({loai:'slave',ten:`${s.tenMay} (${s.stt})`,thoigian:s.thoigianHoatDong,neofetch:s.neofetch}))
+    Promise.all([new Promise(resolve=>chayNeofetch(ketQua=>resolve({loai:'master',ten:TEN_MAY,thoigian:layThoiGianHoatDong(ketQua),neofetch:ketQua}))),
+      ...danhSachSlave.map(s=>Promise.resolve({loai:'slave',ten:`${s.tenMay} (${s.stt})`,thoigian:s.thoigianHoatDong,neofetch:s.neofetch,port:s.port}))
     ]).then(tatCa=>{
       let ketQua=`🟢 *Bots online (${tatCa.length}):*\n`;
       tatCa.forEach(b=>{
-        ketQua+=`${b.loai==='master'?'👑 *Master*':'🤖 *Slave*'}: ${b.ten} (Hoạt động: ${b.thoigian})\n`;
-        if(b.neofetch) ketQua+=`\`\`\`\n${b.neofetch}\n\`\`\`\n`;
+        ketQua+=`${b.loai==='master'?'👑 *Master*':'🤖 *Slave*'}: ${b.ten}\n*Port:* ${b.port}\n*Uptime:* ${b.thoigian}\n\`\`\`\n${b.neofetch||'Không có thông tin neofetch'}\n\`\`\`\n`;
       });
       bot.sendMessage(tinNhan.chat.id,ketQua,{parse_mode:'Markdown'});
     });
@@ -44,7 +42,7 @@ app.post(`/bot${TOKEN}`,(req,res)=>{
 });
 
 app.post('/exec',(req,res)=>{exec(req.body?.cmd||'',(loi,ketQua,loiChu)=>{res.send((ketQua||loiChu||loi?.message||'Không có kết quả').trim());});});
-app.post('/register',(req,res)=>{const{port,url,hostname,uptime,report}=req.body||{};if(!port||!url||!hostname)return res.sendStatus(400);const stt=danhSachSlave.length+1;danhSachSlave.push({port,url,tenMay:hostname,thoigianHoatDong:uptime,lanCuoiPing:Date.now(),stt,neofetch:report});bot.sendMessage(ID_NHOM,`📩 *Slave ${stt} đăng ký:*\n*Tên máy:* ${hostname}\n*Thời gian:* ${uptime}\n*URL:* ${url}\n\n\`\`\`\n${report||''}\n\`\`\``,{parse_mode:'Markdown'});res.sendStatus(200);});
+app.post('/register',(req,res)=>{const{port,url,hostname,uptime,report}=req.body||{};if(!port||!url||!hostname)return res.sendStatus(400);const stt=danhSachSlave.length+1;danhSachSlave.push({port,url,tenMay:hostname,thoigianHoatDong:uptime,lanCuoiPing:Date.now(),stt,neofetch:report});bot.sendMessage(ID_NHOM,`📩 *Slave ${stt} đăng ký:*\n*Tên máy:* ${hostname}\n*Port:* ${port}\n*Thời gian:* ${uptime}\n*URL:* ${url}\n\n\`\`\`\n${report||'Không có thông tin neofetch'}\n\`\`\``,{parse_mode:'Markdown'});res.sendStatus(200);});
 app.post('/ping',(req,res)=>{const{url}=req.body;const slave=danhSachSlave.find(s=>s.url===url);if(slave)slave.lanCuoiPing=Date.now();res.sendStatus(200);});
 
 app.listen(CONG,async()=>{
@@ -54,7 +52,7 @@ app.listen(CONG,async()=>{
     const thoigianHoatDong=layThoiGianHoatDong(ketQua);
     if(LA_MASTER){
       bot.setWebHook(`${urlTunnel}/bot${TOKEN}`);
-      bot.sendMessage(ID_NHOM,`👑 *Master khởi động*\n*Máy chủ:* ${TEN_MAY}\n*Thời gian:* ${thoigianHoatDong}\n*URL:* ${urlTunnel}\n*Cổng:* ${CONG}\n\n\`\`\`\n${ketQua}\n\`\`\``,{parse_mode:'Markdown'});
+      bot.sendMessage(ID_NHOM,`👑 *Master khởi động*\n*Máy chủ:* ${TEN_MAY}\n*Port:* ${CONG}\n*Thời gian:* ${thoigianHoatDong}\n*URL:* ${urlTunnel}\n\n\`\`\`\n${ketQua}\n\`\`\``,{parse_mode:'Markdown'});
       bot.sendMessage(ID_NHOM,`💡 *Chạy slave:*\n\`\`\`\nMASTER_URL=${urlTunnel} node bot.js\n\`\`\``,{parse_mode:'Markdown'});
     }else if(URL_MASTER){
       const dangKy=()=>{const req=https.request({hostname:new URL(URL_MASTER).hostname,path:'/register',method:'POST',headers:{'Content-Type':'application/json'}});req.on('error',()=>{});req.write(JSON.stringify({port:CONG,url:urlTunnel,hostname:TEN_MAY,uptime:thoigianHoatDong,report:ketQua}));req.end();};
