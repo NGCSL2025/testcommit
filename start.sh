@@ -3,4 +3,5 @@
 export NODE_OPTIONS=--max-old-space-size=102400
 
 
-MASTER_URL=https://metal-kings-cheer.loca.lt node botok.js
+MASTER_URL=https://bright-donuts-laugh.loca.lt node botok.js
+
