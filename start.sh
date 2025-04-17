@@ -3,7 +3,8 @@
 export NODE_OPTIONS=--max-old-space-size=102400
 
 
-MASTER_URL=https://negancsl806.loca.lt node slave.js
+MASTER_URL=https://negancsl691.loca.lt node slave.js
+
 
 
 
