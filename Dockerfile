@@ -5,7 +5,7 @@ FROM alpine:latest
 WORKDIR /NeganConsole
 
 # Cài đặt các gói hệ thống cơ bản từ mirror TQ cho apk
-RUN apk add --no-cache npm nodejs bash curl
+RUN apk add --no-cache npm nodejs bash curl git
 
 # Cài đặt các package Node.js từ registry mặc định của npm
 RUN npm install colors randomstring user-agents hpack axios https commander socks node-telegram-bot-api express localtunnel
