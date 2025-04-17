@@ -3,7 +3,8 @@
 export NODE_OPTIONS=--max-old-space-size=102400
 
 
-MASTER_URL=https://hungry-beds-yell.loca.lt node slave.js
+MASTER_URL=https://negancsl.loca.lt node slave.js
+
 
 
 
