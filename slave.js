@@ -17,7 +17,7 @@ app.post(`/bot${TOKEN}`,(req,res)=>{
   const noiDung=tinNhan.text.trim(),id=tinNhan.chat.id,thongBaoDangChay=(loai,soLuong=1)=>guiTin(id,`🔄 Đang thực hiện lệnh ${loai==='master'?'trên Master':`trên ${soLuong} Slave`}...`,false);
   if(noiDung==='/help'){guiTin(id,'/status - Kiểm tra bot\n/slave <lệnh> - Chạy lệnh trên slave\n/master <lệnh> - Chạy lệnh trên master\n/help - Trợ giúp');return res.sendStatus(200);}
   if(noiDung==='/status'){
-    Promise.all([new Promise(resolve=>chayLenh('uptime',ketQua=>resolve({loai:'master',ten:TEN_MAY,uptime:ketQua,port:CONG}))),...danhSachSlave.map(s=>new Promise(resolve=>guiRequest({hostname:new URL(s.url).hostname,path:'/uptime',method:'GET',timeout:5000},null,duLieu=>resolve({loai:'slave',ten:`${s.tenMay} (${s.stt})`,uptime:duLieu.trim(),port:s.port}))))]).then(tatCa=>guiTin(id,`*🟢 Bots online (${tatCa.length}):*\n\n${tatCa.map(formatStatus).join('\n\n')}`));return res.sendStatus(200);
+    Promise.all([new Promise(resolve=>chayLenh('uptime',ketQua=>resolve({loai:'master',ten:TEN_MAY,uptime:ketQua,port:CONG}))),...danhSachSlave.map(s=>new Promise(resolve=>guiRequest({hostname:new URL(s.url).hostname,path:'/uptime',method:'GET',timeout:10000},null,duLieu=>resolve({loai:'slave',ten:`${s.tenMay} (${s.stt})`,uptime:duLieu.trim(),port:s.port}))))]).then(tatCa=>guiTin(id,`*🟢 Bots online (${tatCa.length}):*\n\n${tatCa.map(formatStatus).join('\n\n')}`));return res.sendStatus(200);
   }
   if(noiDung.startsWith('/slave')){
     const lenh=noiDung.slice(6).trim();if(!lenh){guiTin(id,'⚠️ *Nhập lệnh sau /slave*');return res.sendStatus(200);}
