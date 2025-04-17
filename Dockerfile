@@ -8,7 +8,7 @@ WORKDIR /NeganConsole
 RUN apk add --no-cache npm nodejs bash curl
 
 # Cài đặt các package Node.js từ registry mặc định của npm
-RUN npm install colors randomstring user-agents hpack axios https commander socks node-telegram-bot-api localtunnel
+RUN npm install colors randomstring user-agents hpack axios https commander socks node-telegram-bot-api express localtunnel
 
 # Sao chép mã nguồn vào container
 COPY . . 
